@@ -3,9 +3,7 @@ writes and fetches audits
 """
 
 from datetime import datetime
-import sys
-sys.path.append("../database")
-from connection import get_db_connection
+from database.connection import get_db_connection
 
 def write_audit_entry(event_type: str, agent_name: str, actor: str, action: str, reason: str):
     conn = get_db_connection()
@@ -24,6 +22,6 @@ def fetch_audit_entries():
     logs =[]
     for row in cursor.fetchall():
         logs.append(dict(row))
-        
+
     conn.close()
     return logs

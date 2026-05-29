@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Agent Governance Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+    <header class="border-b border-gray-800 bg-gray-950 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-white">Agent Operations Control</h1>
+            <p class="text-xs text-gray-400">Governance • Monitoring Engine • Adaptive Learning Ledger</p>
+        </div>
+        <button onclick="syncDashboard()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-xs font-semibold rounded shadow transition">Sync Console Matrix</button>
+    </header>
+    <main class="p-6 max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <section class="bg-gray-950 border border-gray-800 rounded-lg p-5">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">1. Agent Governance Framework</h2>
+            <div id="governance_container" class="space-y-4"></div>
+        </section>
+        <section class="bg-gray-950 border border-gray-800 rounded-lg p-5 flex flex-col">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">2. Usage Telemetry Metering</h2>
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-xs text-gray-300">
+                    <thead class="bg-gray-900 text-gray-400 font-semibold uppercase border-b border-gray-800">
+                        <tr>
+                            <th class="p-3">Identity Mapping</th>
+                            <th class="p-3 text-center">Invocations</th>
+                            <th class="p-3 text-right">Aggregated Compute Units</th>
+                            <th class="p-3 text-right">Total Accrued Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetry_table_body"></tbody>
+                </table>
+            </div>
+        </section>
+        <section class="bg-gray-950 border border-gray-800 rounded-lg p-5 h-[400px] flex flex-col">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">3. System Optimization Insights (Self-Learning)</h2>
+            <div id="insights_container" class="space-y-3 overflow-y-auto flex-1 pr-2"></div>
+        </section>
+        <section class="bg-gray-950 border border-gray-800 rounded-lg p-5 h-[400px] flex flex-col">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">4. Unalterable System Audit Ledger</h2>
+            <div id="audit_container" class="space-y-2 overflow-y-auto flex-1 text-xs pr-2"></div>
+        </section>
+    </main>
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        async function syncDashboard() {
+            try {
+                const [agentsRes, auditRes, insightsRes] = await Promise.all([
+                    fetch(`${API_URL}/agents`),
+                    fetch(`${API_URL}/audit-log`),
+                    fetch(`${API_URL}/improvement-suggestions`)
+                ]);
+                const agents = await agentsRes.json();
+                const logs = await auditRes.json();
+                const insights = await insightsRes.json();
+                renderGovernance(agents);
+                renderTelemetry(agents);
+                renderInsights(insights);
+                renderAudits(logs);
+            } catch (err) {
+                console.error("Context synchronization failure:", err);
+            }
+        }
+        function renderGovernance(agents) {
+            const container = document.getElementById("governance_container");
+            container.innerHTML = agents.map(agent => {
+                let badgeColor = agent.status === 'allowed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : agent.status === 'blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                let riskColor = agent.risk_level === 'high' ? 'text-red-400' : agent.risk_level === 'medium' ? 'text-yellow-400' : 'text-green-400';
+                return `
+                    <div class="border border-gray-800 bg-gray-900/50 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-white text-sm">${agent.name}</span>
+                                <span class="border px-2 py-0.5 text-[10px] font-medium rounded-full ${badgeColor}">${agent.status}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wide ${riskColor}">${agent.risk_level} Risk</span>
+                            </div>
+                            <p class="text-xs text-gray-400 max-w-md">${agent.description}</p>
+                            <div class="text-[11px] text-gray-500">
+                                <span>Reliability: <b class="text-gray-300">${agent.reliability_score}%</b></span>
+                                <span class="mx-2">•</span>
+                                <span>Reason: <i class="text-gray-400">"${agent.last_decision_reason || 'N/A'}"</i></span>
+                            </div>
+                        </div>
+                        <form onsubmit="postGovernanceChange(event, '${agent.name}')" class="flex flex-wrap items-center gap-2 bg-gray-950 p-2 rounded-md border border-gray-800 w-full md:w-auto">
+                            <select name="decision" class="bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white focus:outline-none">
+                                <option value="allowed" ${agent.status==='allowed'?'selected':''}>Allow</option>
+                                <option value="blocked" ${agent.status==='blocked'?'selected':''}>Block</option>
+                                <option value="pending_review" ${agent.status==='pending_review'?'selected':''}>Review</option>
+                            </select>
+                            <input type="text" name="reason" placeholder="Justification reasoning..." required class="bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white placeholder-gray-500 focus:outline-none min-w-[140px] flex-1">
+                            <input type="text" name="actor" placeholder="Admin identifier" required class="bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white placeholder-gray-500 focus:outline-none w-24">
+                            <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-white font-medium text-xs px-3 py-1 rounded border border-gray-700 transition">Commit</button>
+                        </form>
+                    </div>
+                `;
+            }).join("");
+        }
+        function renderTelemetry(agents) {
+            const tbody = document.getElementById("telemetry_table_body");
+            tbody.innerHTML = agents.map(agent => `
+                <tr class="border-b border-gray-800 hover:bg-gray-900/30 transition">
+                    <td class="p-3 font-medium text-white">${agent.name}</td>
+                    <td class="p-3 text-center text-gray-400 font-mono">${agent.usage_count}</td>
+                    <td class="p-3 text-right text-gray-400 font-mono">${agent.total_units.toLocaleString()}</td>
+                    <td class="p-3 text-right font-semibold text-emerald-400 font-mono">$${agent.total_cost.toFixed(4)}</td>
+                </tr>
+            `).join("");
+        }
+        function renderInsights(insights) {
+            const container = document.getElementById("insights_container");
+            if(insights.length === 0) {
+                container.innerHTML = `<div class="text-xs text-gray-500 text-center py-8">Core analysis operating normal. No active infrastructure drift anomalies.</div>`;
+                return;
+            }
+            container.innerHTML = insights.map(item => {
+                let schema = item.severity === 'critical' ? 'bg-red-500/10 border-red-500/20 text-red-400' : item.severity === 'high' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400';
+                return `
+                    <div class="border rounded-md p-3 flex flex-col space-y-1 ${schema}">
+                        <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider">
+                            <span>${item.agent_name} // ${item.type}</span>
+                            <span>${item.severity}</span>
+                        </div>
+                        <p class="text-xs opacity-90">${item.suggestion}</p>
+                    </div>
+                `;
+            }).join("");
+        }
+        function renderAudits(logs) {
+            const container = document.getElementById("audit_container");
+            if(logs.length === 0) {
+                container.innerHTML = `<div class="text-gray-500 text-center py-8">Auditing layer active. System waiting for lifecycle operational states.</div>`;
+                return;
+            }
+            container.innerHTML = logs.map(log => `
+                <div class="p-2.5 border border-gray-800/60 bg-gray-900/20 rounded flex items-start gap-3 hover:border-gray-700 transition">
+                    <span class="text-gray-500 font-mono text-[10px] pt-0.5">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <div class="space-y-0.5 flex-1">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-gray-300 font-medium">Agent: <b class="text-white">${log.agent_name}</b> shifted via <span class="text-blue-400">${log.event_type}</span></span>
+                            <span class="text-gray-500 font-semibold text-[10px] uppercase">Actor: ${log.actor}</span>
+                        </div>
+                        <p class="text-gray-400 text-[11px]">${log.action} — <span class="text-gray-500 italic">"${log.reason}"</span></p>
+                    </div>
+                </div>
+            `).join("");
+        }
+        async function postGovernanceChange(e, name) {
+            e.preventDefault();
+            const form = e.target;
+            const payload = {
+                decision: form.decision.value,
+                reason: form.reason.value,
+                approved_by: form.actor.value
+            };
+            try {
+                const response = await fetch(`${API_URL}/agents/${name}/decision`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(!response.ok) {
+                    const errorData = await response.json();
+                    alert(`Action Denied: ${errorData.detail}`);
+                    return;
+                }
+                form.reason.value = "";
+                syncDashboard();
+            } catch (err) {
+                console.error("Transmission fault:", err);
+            }
+        }
+        window.onload = syncDashboard;
+    </script>
+</body>
+</html>

@@ -1,14 +1,10 @@
-"""
-Initialize the sample seed values of AI-agent telemeters
-"""
-
 import sqlite3
-from connection import DB_PATH
+import os
+from database.connection import DB_PATH
 
 def initialize_and_seed():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS agents (
             name TEXT PRIMARY KEY,
@@ -20,7 +16,6 @@ def initialize_and_seed():
             output_token_rate REAL
         )
     """)
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS agent_telemetry (
             request_id TEXT PRIMARY KEY,
@@ -35,7 +30,6 @@ def initialize_and_seed():
             FOREIGN KEY(agent_name) REFERENCES agents(name)
         )
     """)
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,19 +41,17 @@ def initialize_and_seed():
             reason TEXT
         )
     """)
-
-    seed_agents = seed_agents = [
+    seed_agents = [
         ("DocParser", "Parses incoming PDF invoices", "low", "allowed", "Initial setup", 5.00/1000000, 15.00/1000000),
         ("CodeReviewer", "Automated PR code analysis", "medium", "pending_review", "System evaluation needed", 2.50/1000000, 10.00/1000000),
         ("DataAnonymizer", "Removes PII from logs", "high", "blocked", "Security compliance hold", 10.00/1000000, 30.00/1000000),
         ("TrendAnalyzer", "Market trend prediction engine", "medium", "allowed", "Production baseline", 15.00/1000000, 60.00/1000000)
     ]
     cursor.executemany("""
-        INSERT OR IGNORE INTO agents 
+        INSERT INTO agents 
         (name, description, risk_level, status, last_decision_reason, input_token_rate, output_token_rate)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, seed_agents)
-
     conn.commit()
     conn.close()
 
