@@ -1,0 +1,12 @@
+# Virtual Enviroments
+venv/
+.venv/
+ENV/
+
+# Python Cache and Compiled Files
+__pycache__/
+*.pyc
+
+# Poetry
+.poetry/
+poetry.toml
