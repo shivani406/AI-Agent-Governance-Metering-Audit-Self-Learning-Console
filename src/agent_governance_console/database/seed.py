@@ -13,8 +13,12 @@ def seed_database():
         CREATE TABLE IF NOT EXISTS agents (
             agent_id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            risk_level TEXT NOT NULL,
             status TEXT NOT NULL,
-            total_cost_spent REAL DEFAULT 0.0
+            reliability_score REAL NOT NULL,
+            usage_count INTEGER DEFAULT 0,
+            last_decision_reason TEXT
         )
     """)
     cursor.execute("""
@@ -32,12 +36,32 @@ def seed_database():
             policy_id INTEGER,
             agent_id INTEGER NOT NULL,
             token_count INTEGER NOT NULL,
+            approved_by TEXT, NOT NULL
             action_taken TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            previous_hash TEXT,
+            hash TEXT,
             FOREIGN KEY(policy_id) REFERENCES policies(policy_id),
             FOREIGN KEY(agent_id) REFERENCES agents(agent_id)
         )
     """)
+
+    # to prevent tampering of audit_logs table using insert or delete commands
+    cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS prevent_log_updates
+                    BEFORE UPDATE ON audit_logs
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be modified.');
+                    END;
+                    """)
+    
+    cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS prevent_log_deletes
+                    BEFORE DELETE ON audit_logs
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be deleted.');
+                    END;
+                    """)
 
     # Insert Sample Data
 
