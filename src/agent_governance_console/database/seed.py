@@ -8,8 +8,13 @@ def seed_database():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute("DROP TABLE IF EXISTS usage_telemetry")
+    cursor.execute("DROP TABLE IF EXISTS governance_audit_logs")
+    cursor.execute("DROP TABLE IF EXISTS policies")
+    cursor.execute("DROP TABLE IF EXISTS agents")
+
     # Define Data Models
-    # == Data models to be improved further
+   
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS agents (
             agent_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,36 +70,22 @@ def seed_database():
         """)
     
     # to prevent tampering of audit_logs table using insert or delete commands
-    cursor.execute("""
-                    CREATE TRIGGER IF NOT EXISTS prevent_log_updates
-                    BEFORE UPDATE ON usage_telemetry
-                    BEGIN
-                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be modified.');
-                    END;
-                    """)
-    
-    cursor.execute("""
-                    CREATE TRIGGER IF NOT EXISTS prevent_log_deletes
-                    BEFORE DELETE ON usage_telemetry
-                    BEGIN
-                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be deleted.');
-                    END;
-                    """)
-    cursor.execute("""
-                    CREATE TRIGGER IF NOT EXISTS prevent_log_updates
-                    BEFORE UPDATE ON governance_audit_logs
-                    BEGIN
-                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be modified.');
-                    END;
-                    """)
-    
-    cursor.execute("""
-                    CREATE TRIGGER IF NOT EXISTS prevent_log_deletes
-                    BEFORE DELETE ON governance_audit_logs
-                    BEGIN
-                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be deleted.');
-                    END;
-                    """)
+    log_tables = ["governance_audit_logs", "usage_telemetry"]
+    for table in log_tables:
+        cursor.execute(f"""
+            CREATE TRIGGER IF NOT EXISTS prevent_updates_{table}
+            BEFORE UPDATE ON {table}
+            BEGIN
+                SELECT RAISE(FAIL, 'Logs are append-only and cannot be modified.');
+            END;
+        """)
+        cursor.execute(f"""
+            CREATE TRIGGER IF NOT EXISTS prevent_deletes_{table}
+            BEFORE DELETE ON {table}
+            BEGIN
+                SELECT RAISE(FAIL, 'Logs are append-only and cannot be deleted.');
+            END;
+        """)
 
     # Insert Sample Data
 
@@ -108,15 +99,21 @@ def seed_database():
         INSERT OR IGNORE INTO policies (policy_id, agent_id, max_cost_limit, reliability_threshold)
         VALUES (1, 1, 10.00, 0.95)
     """)
-    # initial hash string
+    
+    # initial hash string for both log tables
 
-    data_to_hash = "11Initial System Boot0system0"
-
-    initial_hash = hashlib.sha256(data_to_hash.encode()).hexdigest()
+    gov_genesis_data = "1initial_boot_allowedsystemSystem Initialization Base0"
+    gov_hash = hashlib.sha256(gov_genesis_data.encode()).hexdigest()
     cursor.execute("""
-        INSERT OR IGNORE INTO audit_logs (log_id, policy_id, agent_id, token_count, approved_by, action_taken, previous_hash, hash)
-        VALUES (1, 1, 1, 0, 'system', 'Initial System Boot', '0', ?)
-    """, (initial_hash,))
+        INSERT INTO governance_audit_logs (log_id, agent_id, action_taken, approved_by, reason, previous_hash, hash)
+        VALUES (1, 1, 'initial_boot_allowed', 'system', 'System Initialization Base', '0', ?)
+    """, (gov_hash,))
+    tel_genesis_data = "0systemsystem00.0system_init_boot0"
+    tel_hash = hashlib.sha256(tel_genesis_data.encode()).hexdigest()
+    cursor.execute("""
+        INSERT INTO usage_telemetry (telemetry_id, request_id, caller_agent_name, target_agent_name, units_consumed, cost, status, previous_hash, hash)
+        VALUES (1, '0', 'system', 'system', 0, 0.0, 'system_init_boot', '0', ?)
+    """, (tel_hash,))
     
     conn.commit()
     conn.close()
