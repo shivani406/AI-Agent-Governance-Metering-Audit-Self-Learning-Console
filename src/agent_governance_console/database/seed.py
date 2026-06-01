@@ -58,7 +58,7 @@ def seed_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usage_telemetry (
         telemetry_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        request_id TEXT NOT NULL UNIQUE, -- Prevents duplicate counting cleanly!
+        request_id TEXT NOT NULL UNIQUE, 
         caller_agent_name TEXT NOT NULL,
         target_agent_name TEXT NOT NULL,
         units_consumed INTEGER NOT NULL,
@@ -99,7 +99,7 @@ def seed_database():
         INSERT OR IGNORE INTO policies (policy_id, agent_id, max_cost_limit, reliability_threshold)
         VALUES (1, 1, 10.00, 0.95)
     """)
-    
+
     # initial hash string for both log tables
 
     gov_genesis_data = "1initial_boot_allowedsystemSystem Initialization Base0"

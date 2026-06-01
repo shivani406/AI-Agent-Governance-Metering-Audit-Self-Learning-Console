@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
 from agent_governance_console.database.connection import get_db_connection
-from agent_governance_console.backend.services.audit import add_audit_log
+from agent_governance_console.backend.services.audit import add_governance_log
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ def get_all_agents( db = Depends(get_db)):
     cursor.execute("""
                     SELECT * FROM AGENTS
                    """)
-    agents = cursor.fetchall()
+    agents = [dict(row) for row in cursor.fetchall()]
     return {"agents" : agents}
 
 @router.post("/{name}/decision", status_code = 201)
@@ -55,19 +55,13 @@ def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(ge
                     """ ,(payload.decision, payload.reason, name)
                     )
     # generate corressponding audit log
-    add_audit_log(cursor, agent["agent_id"], payload.decision, 0, payload.approved_by, policy_id=None)
+    action_string = f"agent_{payload.decision}"
+    add_governance_log(cursor, agent["agent_id"], action_string, payload.approved_by, payload.reason)
 
     db.commit()
     return {"message" : f"Agent {name} updated successfully !"}
 
-@router.get("/debug/{name}")
-def debug_agent_data(name: str, db=Depends(get_db)):
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM agents WHERE agent_name = ?", (name,))
-    row = cursor.fetchone()
-    if not row:
-        return {"error": "Agent not found in database"}
-    return {"database_values": dict(row)}
+
 
     
     
