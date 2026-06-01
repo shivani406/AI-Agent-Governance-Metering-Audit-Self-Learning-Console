@@ -1,6 +1,7 @@
 """
 Script to create data models and add sample values to our Agent database, to test initial API
 """
+import hashlib
 from agent_governance_console.database.connection import get_db_connection
 
 def seed_database():
@@ -30,26 +31,43 @@ def seed_database():
             FOREIGN KEY(agent_id) REFERENCES agents(agent_id)
         )
     """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS audit_logs (
-            log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            policy_id INTEGER,
-            agent_id INTEGER NOT NULL,
-            token_count INTEGER NOT NULL,
-            approved_by TEXT, NOT NULL
-            action_taken TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            previous_hash TEXT,
-            hash TEXT,
-            FOREIGN KEY(policy_id) REFERENCES policies(policy_id),
-            FOREIGN KEY(agent_id) REFERENCES agents(agent_id)
-        )
-    """)
 
+    # split the audit table into 2 parts (admin_audit_trail + Runtime_usage_audit_trail )
+
+    # ADMINISTRATIVE AUDIT TRAIL 
+    # -- Tracks explicit administrative changes (allowed, blocked, etc.)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS governance_audit_logs (
+        log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id INTEGER NOT NULL,
+        action_taken TEXT NOT NULL,     
+        approved_by TEXT NOT NULL,     
+        reason TEXT NOT NULL,           
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        previous_hash TEXT,
+        hash TEXT,
+        FOREIGN KEY(agent_id) REFERENCES agents(agent_id))
+        """)
+
+    # RUNTIME USAGE AUDIT TRAIL
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usage_telemetry (
+        telemetry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id TEXT NOT NULL UNIQUE, -- Prevents duplicate counting cleanly!
+        caller_agent_name TEXT NOT NULL,
+        target_agent_name TEXT NOT NULL,
+        units_consumed INTEGER NOT NULL,
+        cost REAL NOT NULL,
+        status TEXT NOT NULL,            
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        previous_hash TEXT,
+        hash TEXT);
+        """)
+    
     # to prevent tampering of audit_logs table using insert or delete commands
     cursor.execute("""
                     CREATE TRIGGER IF NOT EXISTS prevent_log_updates
-                    BEFORE UPDATE ON audit_logs
+                    BEFORE UPDATE ON usage_telemetry
                     BEGIN
                         SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be modified.');
                     END;
@@ -57,7 +75,22 @@ def seed_database():
     
     cursor.execute("""
                     CREATE TRIGGER IF NOT EXISTS prevent_log_deletes
-                    BEFORE DELETE ON audit_logs
+                    BEFORE DELETE ON usage_telemetry
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be deleted.');
+                    END;
+                    """)
+    cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS prevent_log_updates
+                    BEFORE UPDATE ON governance_audit_logs
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be modified.');
+                    END;
+                    """)
+    
+    cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS prevent_log_deletes
+                    BEFORE DELETE ON governance_audit_logs
                     BEGIN
                         SELECT RAISE(FAIL, 'Audit logs are append-only and cannot be deleted.');
                     END;
@@ -68,17 +101,22 @@ def seed_database():
     #== temporary for now , to test inital api
 
     cursor.execute("""
-        INSERT OR IGNORE INTO agents (agent_id, agent_name, status, total_cost_spent)
-        VALUES (1, 'CustomerSupportBot', 'active', 0.125)
+        INSERT OR IGNORE INTO agents (agent_id, agent_name, description, risk_level, status, reliability_score, usage_count, last_decision_reason)
+        VALUES (1, 'CustomerSupportBot', 'Automated frontline user support specialist', 'high', 'active', 0.95, 0, NULL)
     """)
     cursor.execute("""
         INSERT OR IGNORE INTO policies (policy_id, agent_id, max_cost_limit, reliability_threshold)
         VALUES (1, 1, 10.00, 0.95)
     """)
+    # initial hash string
+
+    data_to_hash = "11Initial System Boot0system0"
+
+    initial_hash = hashlib.sha256(data_to_hash.encode()).hexdigest()
     cursor.execute("""
-        INSERT OR IGNORE INTO audit_logs (log_id, policy_id, agent_id, token_count, action_taken)
-        VALUES (1, 1, 1, 350, 'Request Authorized')
-    """)
+        INSERT OR IGNORE INTO audit_logs (log_id, policy_id, agent_id, token_count, approved_by, action_taken, previous_hash, hash)
+        VALUES (1, 1, 1, 0, 'system', 'Initial System Boot', '0', ?)
+    """, (initial_hash,))
     
     conn.commit()
     conn.close()

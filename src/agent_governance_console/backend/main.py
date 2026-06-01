@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from agent_governance_console.backend.routes import agents
+from agent_governance_console.backend.routes.usage import router as usage_router
+from agent_governance_console.backend.routes.audit import router as audit_router
 
 app = FastAPI()
 
 # include all the router isolated api's
 
 app.include_router(agents.router, prefix = "/agents", tags = ["Agents"])
+app.include_router(usage_router, prefix="/usage", tags=["Usage Metering"])
+app.include_router(audit_router, prefix="/audit-log", tags=["Audit Analytics"])
 
 @app.get("/", status_code = 200)
 def read_root():
-    return {"status" : "healthy"}
+    return {"status" : "healthy", "service": "Agent Governance Console Gateway"}
