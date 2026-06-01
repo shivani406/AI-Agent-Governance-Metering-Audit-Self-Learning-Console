@@ -43,6 +43,9 @@ def log_usage(payload : UsageRequest , db = Depends(get_db)):
     
 
 @router.get("/usage-summary", status_code= 200)
+
+#=========complete this (2 agents - caller + target) --> mapping their token usage ??
+
 def get_usage_summary(db = Depends(get_db)):
     cursor = db.cursor()
     cursor.execute("""

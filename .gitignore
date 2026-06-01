@@ -11,3 +11,6 @@ __pycache__/
 # Poetry
 .poetry/
 poetry.toml
+
+#Other
+TO_DO.txt
