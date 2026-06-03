@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
 from agent_governance_console.database.db_connection import get_db_connection
-from agent_governance_console.backend.services.audit import add_governance_log
+
 
 router = APIRouter()
 
@@ -21,9 +21,9 @@ def get_db():
     try:
         yield db  # to keep the connection open until query is executed
     finally:
-        db.close() # safety net to close DB if request stops in between
+        db.close() 
 
-# use router to navigate 
+# Fetch all the agent data from agents table 
 @router.get("/")
 def get_all_agents( db = Depends(get_db)):
     cursor = db.cursor()
@@ -33,6 +33,7 @@ def get_all_agents( db = Depends(get_db)):
     agents = [dict(row) for row in cursor.fetchall()]
     return {"agents" : agents}
 
+# change the agents permission (allow/block any agent)
 @router.post("/{name}/decision", status_code = 201)
 def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(get_db)):
     
@@ -44,20 +45,18 @@ def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(ge
     agent = cursor.fetchone()
     if not agent:
          raise HTTPException (status_code= 404, detail= "Agent not Found")
-    
+    # log agent not found in security incident logs
+
     if agent["risk_level"] == "high" and payload.decision == "allowed" and not payload.reason.strip() :
         raise HTTPException(status_code=400, detail="High Risk Agents require a reason to be allowed")
-    
+    # log calling blocked agent in security incident logs
     cursor.execute("""
                     UPDATE agents
                     SET status = ? , last_decision_reason = ?
                     WHERE agent_name = ?
                     """ ,(payload.decision, payload.reason, name)
                     )
-    # generate corressponding audit log
-    action_string = f"agent_{payload.decision}"
-    add_governance_log(cursor, agent["agent_id"], action_string, payload.approved_by, payload.reason)
-
+    #== decide where to log the agent permission changes in which loag table??
     db.commit()
     return {"message" : f"Agent {name} updated successfully !"}
 

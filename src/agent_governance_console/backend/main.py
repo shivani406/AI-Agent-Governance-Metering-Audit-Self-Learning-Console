@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from agent_governance_console.backend.routes import agents
-from agent_governance_console.backend.routes.usage import router as usage_router
-from agent_governance_console.backend.routes.audit import router as audit_router
+from agent_governance_console.backend.api import agents
+from agent_governance_console.backend.api.usage import router as usage_router
+from agent_governance_console.backend.api.audit import router as audit_router
 
 app = FastAPI()
 
