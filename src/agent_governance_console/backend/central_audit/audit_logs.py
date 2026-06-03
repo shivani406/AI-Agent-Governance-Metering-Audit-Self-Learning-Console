@@ -1,11 +1,19 @@
 """
+This is a (M2M) API - agent calls this to log their usage when they call other agents (caller + target + units consumed + cost + status)
+
 Handles Audit generation and SHA-256 hashing for tamper-proof logging
+- contains all the functions required to log
+    - the agent permission changes 
+    - usage telemetry 
+    - security incidents (like calling blocked agents, missing agents, etc.)
+- implements hash chaining for data integrity
 """
 
 import hashlib
 
 def calculate_hash(data_string :str) -> str:
     return hashlib.sha256(data_string.encode()).hexdigest()
+
 # to add logs 
 def add_governance_log(cursor, agent_id : int, action_taken :str , approved_by :str, reason : str):
     cursor.execute("""
@@ -39,56 +47,3 @@ def add_telemetry_log(cursor, request_id: str, caller: str, target: str, units: 
                 """, (request_id, caller, target, units, cost, status, previous_hash, current_hash)
                 )
     
-
-
-
-
-
-
-
-
-
-# agents - audit.py
-from fastapi import APIRouter, Depends
-from agent_governance_console.database.db_connection import get_db_connection
-
-router = APIRouter()
-
-def get_db():
-    db = get_db_connection()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@router.get("/" , status_code= 200)
-def get_audit_trail(db = Depends(get_db)):
-    cursor = db.cursor
-    cursor.execute("""
-        SELECT 
-            g.timestamp,
-            g.action_taken AS event_type,
-            a.agent_name,
-            g.action_taken AS action,
-            g.approved_by AS actor,
-            g.reason
-        FROM governance_audit_logs g
-        LEFT JOIN agents a ON g.agent_id = a.agent_id
-        
-        UNION ALL
-        
-        SELECT 
-            t.timestamp,
-            t.status AS event_type,
-            t.caller_agent_name AS agent_name,
-            'units: ' || t.units_consumed || ', cost: ' || t.cost AS action,
-            'system' AS actor,
-            'Request ID: ' || t.request_id AS reason
-        FROM usage_telemetry t
-        
-        ORDER BY timestamp DESC
-    """)
-
-    #== improve : to return logs for a entered time period by the user
-    logs = [dict(row) for row in cursor.fetchall()]
-    return {"audit_logs" : logs}

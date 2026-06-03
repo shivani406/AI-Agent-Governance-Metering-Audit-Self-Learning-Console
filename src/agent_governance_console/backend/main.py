@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from agent_governance_console.backend.api import agents
 from agent_governance_console.backend.api.usage import router as usage_router
-from agent_governance_console.backend.api.audit import router as audit_router
 
 app = FastAPI()
 
@@ -9,7 +8,8 @@ app = FastAPI()
 
 app.include_router(agents.router, prefix = "/agents", tags = ["Agents"])
 app.include_router(usage_router, prefix="/usage", tags=["Usage Metering"])
-app.include_router(audit_router, prefix="/audit-log", tags=["Audit Analytics"])
+
+# app.include_router(audit_router, prefix="/audit-log", tags=["Audit Analytics"])
 # add main endpoint rounter connection for audits
 
 @app.get("/", status_code = 200)

@@ -15,8 +15,8 @@ router = APIRouter()
 class UsageRequest(BaseModel):
     caller : str
     target : str
-    units : int
-    cost : float
+    caller_tokens: int
+    target_tokens: int
     request_id : str
 
 def get_db():
