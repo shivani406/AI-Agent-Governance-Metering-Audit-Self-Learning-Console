@@ -10,6 +10,7 @@ app = FastAPI()
 app.include_router(agents.router, prefix = "/agents", tags = ["Agents"])
 app.include_router(usage_router, prefix="/usage", tags=["Usage Metering"])
 app.include_router(audit_router, prefix="/audit-log", tags=["Audit Analytics"])
+# add main endpoint rounter connection for audits
 
 @app.get("/", status_code = 200)
 def read_root():

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from agent_governance_console.database.connection import get_db_connection
+from agent_governance_console.database.db_connection import get_db_connection
 
 router = APIRouter()
 
@@ -11,7 +11,7 @@ def get_db():
         db.close()
 
 @router.get("/" , status_code= 200)
-def  get_audit_trail(db = Depends(get_db)):
+def get_audit_trail(db = Depends(get_db)):
     cursor = db.cursor
     cursor.execute("""
         SELECT 
@@ -38,6 +38,6 @@ def  get_audit_trail(db = Depends(get_db)):
         ORDER BY timestamp DESC
     """)
 
-    #== to return logs for a entered time period by the user
+    #== improve : to return logs for a entered time period by the user
     logs = [dict(row) for row in cursor.fetchall()]
     return {"audit_logs" : logs}

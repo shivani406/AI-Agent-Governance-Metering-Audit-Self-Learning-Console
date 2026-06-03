@@ -2,7 +2,7 @@
 Script to create data models and add sample values to our Agent database, to test initial API
 """
 import hashlib
-from agent_governance_console.database.connection import get_db_connection
+from agent_governance_console.database.db_connection import get_db_connection
 
 def seed_database():
     conn = get_db_connection()
@@ -54,7 +54,7 @@ def seed_database():
         FOREIGN KEY(agent_id) REFERENCES agents(agent_id))
         """)
 
-    # RUNTIME USAGE AUDIT TRAIL
+    # USAGE TELEMETRY AUDIT TRAIL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usage_telemetry (
         telemetry_id INTEGER PRIMARY KEY AUTOINCREMENT,

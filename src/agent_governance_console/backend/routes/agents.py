@@ -5,7 +5,7 @@ Handles the subroutines (agents) to be later used in main.py
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Literal
-from agent_governance_console.database.connection import get_db_connection
+from agent_governance_console.database.db_connection import get_db_connection
 from agent_governance_console.backend.services.audit import add_governance_log
 
 router = APIRouter()
