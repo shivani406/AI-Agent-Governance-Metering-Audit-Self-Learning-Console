@@ -47,9 +47,11 @@ def log_agent_to_agent_usage(payload : UsageRequest , db = Depends(get_db)):
     # if any of the agents involved in the call is missing
     if not target_row:
         add_security_incident_log (cursor, incident_type="missing_agent", description=f"Agent {payload.target} not found during usage logging for request {payload.request_id}",target_agent = payload.target)
+        db.commit()
         raise HTTPException(status_code= 404, detail=f"Unknown Agent: {payload.target}")
     if not caller_row:
         add_security_incident_log (cursor, incident_type="missing_agent", description=f"Agent {payload.caller} not found during usage logging for request {payload.request_id}", caller_agent = payload.caller)
+        db.commit()
         raise HTTPException(status_code= 404, detail=f"Unknown Agent: {payload.caller}")
 
     # if any of the agents involved in the call is blocked
@@ -58,16 +60,19 @@ def log_agent_to_agent_usage(payload : UsageRequest , db = Depends(get_db)):
 
     if target_agent["status"] == "blocked":
         add_security_incident_log (cursor, incident_type="blocked_agent_call", description=f"Agent {payload.target} is blocked",target_agent = payload.target)
+        db.commit()
         raise HTTPException(status_code=403, detail= f"Agent {payload.target} is blocked from making calls")
         
     if caller_agent["status"] == "blocked":
         add_security_incident_log (cursor, incident_type="blocked_agent_call", description=f"Agent {payload.caller} is blocked", caller_agent = payload.caller)
+        db.commit()
         raise HTTPException(status_code=403, detail= f"Agent {payload.caller} is blocked from making calls")
         
     
     # if all the request is clear,(no missing or blocked agents) then log the usage in usage_ledger 
     
     add_usage_ledger(cursor, request_id= payload.request_id, caller_agent= payload.caller, target_agent= payload.target, caller_tokens_consumed= payload.caller_tokens, target_tokens_consumed= payload.target_tokens)
+    db.commit()
     cursor.execute("""
                     UPDATE agents
                    SET usage_count = usage_count + 1
@@ -77,13 +82,15 @@ def log_agent_to_agent_usage(payload : UsageRequest , db = Depends(get_db)):
     cursor.execute("""
                     UPDATE agents
                      SET tokens_consumed = tokens_consumed + ?
-                     WHERE agent_id IN (?)
+                     WHERE agent_id = ?
                      """, (payload.caller_tokens, payload.caller)
                      )
     cursor.execute("""
                     UPDATE agents
                      SET tokens_consumed = tokens_consumed + ?
-                     WHERE agent_id IN (?)
+                     WHERE agent_id = ?
                      """, (payload.target_tokens, payload.target)
                      )
 
+    db.commit()
+    return {"status": "success", "message": "M2M Telemetry successfully recorded"}

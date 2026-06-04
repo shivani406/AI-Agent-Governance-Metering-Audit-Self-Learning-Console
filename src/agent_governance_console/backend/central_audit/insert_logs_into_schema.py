@@ -3,8 +3,7 @@ import hashlib
 Function definitions to insert logs into the three tables 
     - governance_audit_logs (hash_chaining)
     - security_incident_logs (hash_chaining)
-    - usage_telemetry
-    
+    - usage_ledger 
 """
 
 def calculate_hash(data_string :str) -> str:
@@ -14,7 +13,7 @@ def calculate_hash(data_string :str) -> str:
 
 def add_governance_log(cursor, agent_id, action_taken :str , approved_by :str, reason : str):
     cursor.execute("""
-                    SELECT hash FROM governance_audit_logs
+                    SELECT hash FROM governance_logs
                    ORDER BY log_id DESC LIMIT 1
                    """)
     previous_log = cursor.fetchone()

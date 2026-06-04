@@ -16,11 +16,11 @@ def create_schema():
 
     # Define Data Models
    
-    # cursor.execute("DROP TABLE IF EXISTS policies")
-    # cursor.execute("DROP TABLE IF EXISTS agents")
-    # cursor.execute("DROP TABLE IF EXISTS governance_logs")
-    # cursor.execute("DROP TABLE IF EXISTS usage_ledger")
-    # cursor.execute("DROP TABLE IF EXISTS security_incident_logs")
+    cursor.execute("DROP TABLE IF EXISTS policies")
+    cursor.execute("DROP TABLE IF EXISTS agents")
+    cursor.execute("DROP TABLE IF EXISTS governance_logs")
+    cursor.execute("DROP TABLE IF EXISTS usage_ledger")
+    cursor.execute("DROP TABLE IF EXISTS security_incident_logs")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS agents (
@@ -32,7 +32,7 @@ def create_schema():
                    reliability_score REAL NOT NULL,
                    tokens_consumed INTEGER DEFAULT 0,
                    usage_count INTEGER DEFAULT 0,
-                last_decision_reason TEXT
+                   last_decision_reason TEXT
             )
             """)
     
