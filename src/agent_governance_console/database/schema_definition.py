@@ -24,8 +24,8 @@ def create_schema():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS agents (
-                    agent_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    agent_name TEXT NOT NULL UNIQUE,
+                   agent_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   agent_name TEXT NOT NULL UNIQUE,
                    description TEXT NOT NULL,
                    risk_level TEXT NOT NULL,
                    status TEXT NOT NULL,
@@ -64,17 +64,17 @@ def create_schema():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usage_ledger (
-            ledger_id INTEGER PRIMARY KEY AUTOINCREMENT, -- databse token
+            ledger_id INTEGER PRIMARY KEY AUTOINCREMENT, -- database token
             request_id TEXT NOT NULL UNIQUE,   --network token (to detect duplicates)
-            caller_agent TEXT NOT NULL,
-            target_agent TEXT NOT NULL,
+            caller_agent int NOT NULL,
+            target_agent int NOT NULL,
             caller_tokens_consumed INTEGER NOT NULL,
             target_tokens_consumed INTEGER NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             previous_hash TEXT,
             hash TEXT,
-            FOREIGN KEY(caller_agent) REFERENCES agents(agent_name),
-            FOREIGN KEY(target_agent) REFERENCES agents(agent_name)
+            FOREIGN KEY(caller_agent) REFERENCES agents(agent_id),
+            FOREIGN KEY(target_agent) REFERENCES agents(agent_id)
         )
     """)
 
@@ -82,9 +82,11 @@ def create_schema():
         CREATE TABLE IF NOT EXISTS security_incident_logs (
             incident_id INTEGER PRIMARY KEY AUTOINCREMENT,
             incident_type TEXT NOT NULL,  --blocked_agent_call, missing_agent, etc
-            caller_agent TEXT NOT NULL,   
-            target_agent TEXT,
-            details TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            caller_agent int,   
+            target_agent int,
+            description TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(caller_agent) REFERENCES agents(agent_id),
+            FOREIGN KEY(target_agent) REFERENCES agents(agent_id)            
         )
     """)
