@@ -1,21 +1,18 @@
-"""
-This is a (M2M) API - agent calls this to log their usage when they call other agents (caller + target + units consumed + cost + status)
-
-Handles Audit generation and SHA-256 hashing for tamper-proof logging
-- contains all the functions required to log
-    - the agent permission changes 
-    - usage telemetry 
-    - security incidents (like calling blocked agents, missing agents, etc.)
-- implements hash chaining for data integrity
-"""
-
 import hashlib
+"""
+Function definitions to insert logs into the three tables 
+    - governance_audit_logs (hash_chaining)
+    - security_incident_logs (hash_chaining)
+    - usage_telemetry
+    
+"""
 
 def calculate_hash(data_string :str) -> str:
     return hashlib.sha256(data_string.encode()).hexdigest()
 
-# to add logs 
-def add_governance_log(cursor, agent_id : int, action_taken :str , approved_by :str, reason : str):
+#======== Insert logs into respective tables========
+
+def add_governance_log(cursor, action_taken :str , approved_by :str, reason : str):
     cursor.execute("""
                     SELECT hash FROM governance_audit_logs
                    ORDER BY log_id DESC LIMIT 1
@@ -24,16 +21,16 @@ def add_governance_log(cursor, agent_id : int, action_taken :str , approved_by :
     # keep the first hash as 0
     previous_hash = previous_log["hash"] if previous_log else "0"
 
-    data_to_hash = f"{agent_id}{action_taken}{approved_by}{reason}{previous_hash}"
+    data_to_hash = f"{action_taken}{approved_by}{reason}{previous_hash}"
     current_hash = calculate_hash(data_to_hash)
 
     cursor.execute("""
-                    INSERT INTO governanceaudit_logs (agent_id, action_taken, approved_by, reason, previous_hash, hash)
-                   VALUES (?,?,?,?,?,?,?)
-                   """ , (agent_id, action_taken, approved_by, reason, previous_hash, current_hash)
+                    INSERT INTO governance_logs (action_taken, approved_by, reason, previous_hash, hash)
+                   VALUES (?,?,?,?,?)
+                   """ , (action_taken, approved_by, reason, previous_hash, current_hash)
                    )
     
-def add_telemetry_log(cursor, request_id: str, caller: str, target: str, units: int, cost: float, status: str):
+def add_usage_ledger(cursor, request_id: str, caller: str, target: str, status: str):
     cursor.execute("""
                    SELECT hash FROM usage_telemetry ORDER BY telemetry_id DESC LIMIT 1
                    """)
@@ -46,4 +43,10 @@ def add_telemetry_log(cursor, request_id: str, caller: str, target: str, units: 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (request_id, caller, target, units, cost, status, previous_hash, current_hash)
                 )
-    
+def add_security_incident_log(cursor, incident_type: str, description: str, involved_agents: str):
+
+    cursor.execute("""
+                INSERT INTO security_incident_logs (incident_type, description, involved_agents, previous_hash, hash)
+                VALUES (?, ?, ?, ?, ?)
+                """, (incident_type, description, involved_agents, previous_hash, current_hash)
+                )

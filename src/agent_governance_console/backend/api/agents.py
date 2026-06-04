@@ -35,7 +35,7 @@ def get_all_agents( db = Depends(get_db)):
 
 # change the agents permission (allow/block any agent)
 @router.post("/{name}/decision", status_code = 201)
-def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(get_db)):
+def change_agent_decision(name : str, payload : DecisionRequest, db = Depends(get_db)):
     
     cursor = db.cursor()
     cursor.execute("""
@@ -44,6 +44,7 @@ def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(ge
                    )
     agent = cursor.fetchone()
     if not agent:
+         
          raise HTTPException (status_code= 404, detail= "Agent not Found")
     # log agent not found in security incident logs
 
@@ -56,7 +57,7 @@ def create_agent_decision(name : str, payload : DecisionRequest, db = Depends(ge
                     WHERE agent_name = ?
                     """ ,(payload.decision, payload.reason, name)
                     )
-    #== decide where to log the agent permission changes in which loag table??
+    #== decide where to log the agent permission changes in which log table??
     db.commit()
     return {"message" : f"Agent {name} updated successfully !"}
 

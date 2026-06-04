@@ -1,4 +1,6 @@
-# agents - audit.py
+"""
+View the three log tables in the frontend in a tabular format with filters for time period, agent name, etc.
+"""
 from fastapi import APIRouter, Depends
 from agent_governance_console.database.db_connection import get_db_connection
 
