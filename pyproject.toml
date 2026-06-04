@@ -1,9 +1,9 @@
 [project]
 name = "y"
 version = "0.1.0"
-description = "A Platform that allows you to moniter, record audit and track the usage of all AI agents used in your ennterprise"
+description ="A secure, tamper-proof machine-to-machine telemetry logging framework and governance console for AI clusters."
 authors = [
-    {name = "Your Name",email = "you@example.com"}
+    {name = "Shivani Parate", email = "example@gmail.com"}
 ]
 
 requires-python = ">=3.10"

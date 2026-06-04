@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Governance Control Console</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #f8fafc; color: #1e293b; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: #0f172a; color: #fff; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.025em; }
+        main { flex: 1; max-width: 1400px; width: 100%; margin: 2rem auto; padding: 0 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+        section { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        h2 { font-size: 1rem; font-weight: 600; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; color: #334155; }
+        .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+        label { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+        input, select, textarea { padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.875rem; color: #334155; }
+        input:focus, select:focus, textarea:focus { outline: 2px solid #3b82f6; outline-offset: -1px; }
+        button { background: #2563eb; color: #fff; border: none; padding: 0.625rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s ease; }
+        button:hover { background: #1d4ed8; }
+        button.secondary { background: #475569; }
+        button.secondary:hover { background: #334155; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .display-area { background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 0.8125rem; padding: 1rem; border-radius: 6px; overflow-y: auto; max-height: 300px; white-space: pre-wrap; flex: 1; border: 1px solid #1e293b; }
+        .badge { display: inline-block; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-blocked { background: #fee2e2; color: #991b1b; }
+        .badge-review { background: #fef9c3; color: #854d0e; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; margin-top: 0.5rem; }
+        th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 0.625rem; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 0.625rem; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top; }
+        .table-container { overflow-x: auto; max-height: 250px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Agent Governance Console Dashboard</h1>
+        <button class="secondary" onclick="refreshAllData()">Refresh Dashboard Data</button>
+    </header>
+
+    <main>
+        <section>
+            <h2>1. Agent Governance Panel</h2>
+            <div class="table-container">
+                <table id="agentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Agent Name</th>
+                            <th>Status</th>
+                            <th>Usage</th>
+                            <th>Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5" style="text-align:center;">Click Refresh to load agents...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="form-group">
+                <label>Target Agent ID</label>
+                <input type="number" id="govAgentId" placeholder="e.g., 1">
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Administrative Decision</label>
+                    <select id="govDecision">
+                        <option value="active">Active</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="pending_review">Pending Review</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Authorized By</label>
+                    <input type="text" id="govApprovedBy" placeholder="SecurityOperator01">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Reason / Justification</label>
+                <textarea id="govReason" rows="2" placeholder="Provide context for operational shift..."></textarea>
+            </div>
+            <button onclick="submitGovernanceDecision()">Apply Governance Decision</button>
+        </section>
+
+        <section>
+            <h2>2. Usage Metering Ingestion Panel (M2M)</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Caller Agent ID</label>
+                    <input type="number" id="m2mCaller" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Target Agent ID</label>
+                    <input type="number" id="m2mTarget" value="1">
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Caller Tokens Sent</label>
+                    <input type="number" id="m2mCallerTokens" value="150">
+                </div>
+                <div class="form-group">
+                    <label>Target Tokens Consumed</label>
+                    <input type="number" id="m2mTargetTokens" value="300">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Network Request ID (Idempotent Token)</label>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="m2mRequestId" style="flex:1;">
+                    <button class="secondary" style="padding:0 0.75rem;" onclick="generateUUID()">Gen ID</button>
+                </div>
+            </div>
+            <button onclick="submitM2MTelemetry()">Transmit Live Log Telemetry Packet</button>
+            <label>API Operation Stream Response</label>
+            <div class="display-area" id="m2mOutput">// Execution logs print here...</div>
+        </section>
+
+        <section style="grid-column: 1 / -1;">
+            <h2>3. Audit Log Matrix Panel (Tamper-Proof Chaining)</h2>
+            <div class="grid-2" style="grid-template-columns: 1fr 2fr;">
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <button class="secondary" onclick="loadAuditLogTab('usage_ledger')">View Accounting Ledger (Usage)</button>
+                    <button class="secondary" onclick="loadAuditLogTab('governance_logs')">View Admin Ledger (Gov)</button>
+                    <button class="secondary" onclick="loadAuditLogTab('security_incident_logs')">View Alert Triage (Incidents)</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:0.375rem;">
+                    <label id="auditLabel">Active Ledger Matrix Viewer</label>
+                    <div class="display-area" id="auditOutput" style="max-height:250px;">// Select an audit subsystem matrix...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const BASE_URL = window.location.origin;
+
+        function generateUUID() {
+            document.getElementById('m2mRequestId').value = 'req_' + Math.random().toString(36).substring(2, 11).toUpperCase();
+        }
+
+        async function refreshAllData() {
+            try {
+                const res = await fetch(`${BASE_URL}/agents/`);
+                if (!res.ok) throw new Error("Failed fetching cluster agent status");
+                const data = await res.json();
+                const agentsArray = Array.isArray(data) ? data : (data.agents || []);
+                const tbody = document.querySelector("#agentsTable tbody");
+                tbody.innerHTML = "";
+                agentsArray.forEach(agent => {
+                    let badgeClass = "badge-active";
+                    if (agent.status === "blocked") badgeClass = "badge-blocked";
+                    if (agent.status === "pending_review") badgeClass = "badge-review";
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${agent.agent_id}</td>
+                            <td><strong>${agent.agent_name}</strong><br><small style="color:#64748b;">${agent.description}</small></td>
+                            <td><span class="badge ${badgeClass}">${agent.status}</span></td>
+                            <td>${agent.usage_count} calls</td>
+                            <td>${agent.tokens_consumed}</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function submitGovernanceDecision() {
+            const agentId = document.getElementById("govAgentId").value;
+            if (!agentId) return alert("Specify target agent node reference identification index");
+            const payload = {
+                agent_id: parseInt(agentId),
+                decision: document.getElementById("govDecision").value,
+                reason: document.getElementById("govReason").value,
+                approved_by: document.getElementById("govApprovedBy").value || "SystemAdmin"
+            };
+            try {
+                const res = await fetch(`${BASE_URL}/agents/${agentId}/decision`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                alert(res.ok ? "Governance adjustment deployed into runtime parameters" : `Operation Rejection: ${data.detail}`);
+                refreshAllData();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function submitM2MTelemetry() {
+            const reqId = document.getElementById("m2mRequestId").value;
+            if (!reqId) return alert("Generate or define an idempotency network execution index");
+            const payload = {
+                caller: parseInt(document.getElementById("m2mCaller").value),
+                target: parseInt(document.getElementById("m2mTarget").value),
+                caller_tokens: parseInt(document.getElementById("m2mCallerTokens").value),
+                target_tokens: parseInt(document.getElementById("m2mTargetTokens").value),
+                request_id: reqId
+            };
+            const output = document.getElementById("m2mOutput");
+            output.textContent = "Transmitting telemetry data packet parameters over gateway...";
+            try {
+                const res = await fetch(`${BASE_URL}/log-usage/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                output.textContent = `Status: ${res.status}\n\n${JSON.stringify(data, null, 4)}`;
+                refreshAllData();
+            } catch (err) {
+                output.textContent = `Network Error:\n${err.message}`;
+            }
+        }
+
+        async function loadAuditLogTab(ledgerType) {
+            document.getElementById("auditLabel").textContent = `Active Ledger Matrix Viewer: ${ledgerType.toUpperCase()}`;
+            const output = document.getElementById("auditOutput");
+            output.textContent = "Querying log chain integrity rows...";
+            try {
+                const res = await fetch(`${BASE_URL}/audit-log/`);
+                if (!res.ok) throw new Error("Failed to query central log database schemas");
+                const data = await res.json();
+                output.textContent = JSON.stringify(data[ledgerType] || [], null, 4);
+            } catch (err) {
+                output.textContent = `Query Processing Drop: ${err.message}`;
+            }
+        }
+
+        window.onload = () => {
+            generateUUID();
+            refreshAllData();
+        };
+    </script>
+</body>
+</html>

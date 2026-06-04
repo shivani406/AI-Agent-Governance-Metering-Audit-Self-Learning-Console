@@ -1,10 +1,13 @@
+import pathlib
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from agent_governance_console.backend.api import agents
 from agent_governance_console.backend.api import usage
 from agent_governance_console.backend.api import view_audit_trail
 from agent_governance_console.backend.central_audit import M2M_audit
 
 app = FastAPI()
+FRONTEND_DIR = pathlib.Path(__file__).resolve().parent.parent / "frontend"
 
 # include all the router isolated api's
 
@@ -16,4 +19,4 @@ app.include_router(M2M_audit.router, prefix="/log-usage", tags=["M2M Telemetry I
 
 @app.get("/", status_code = 200)
 def read_root():
-    return {"status" : "healthy", "service": "Agent Governance Console Gateway"}
+    return FileResponse(FRONTEND_DIR / "index.html")
