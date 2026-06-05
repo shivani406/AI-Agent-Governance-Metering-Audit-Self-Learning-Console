@@ -10,12 +10,13 @@ Define all the Data Models
 
 from agent_governance_console.database.db_connection import get_db_connection
 
+
 def create_schema():
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # Define Data Models
-   
+
     cursor.execute("DROP TABLE IF EXISTS policies")
     cursor.execute("DROP TABLE IF EXISTS agents")
     cursor.execute("DROP TABLE IF EXISTS governance_logs")
@@ -35,7 +36,7 @@ def create_schema():
                    last_decision_reason TEXT
             )
             """)
-    
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS policies (
             policy_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +47,7 @@ def create_schema():
         )
     """)
 
-    #=======AUDIT TABLES========
+    # =======AUDIT TABLES========
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS governance_logs (

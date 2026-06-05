@@ -1,16 +1,19 @@
 """
-Adds sample values to our Database tables for testing and development purposes. 
+Adds sample values to our Database tables for testing and development purposes.
 This script can be run independently to reset and seed the database with initial data
 It also sets up triggers to ensure that audit logs are append-only and cannot be modified or deleted
 """
+
 import hashlib
+
 from agent_governance_console.database.db_connection import get_db_connection
 from agent_governance_console.database.schema_definition import create_schema
 
+
 def seed_database(cursor):
 
-    #== temporary for now , to test inital app
-       
+    # == temporary for now , to test inital app
+
     cursor.execute("""
         INSERT INTO agents (agent_id, agent_name, description, risk_level, status, reliability_score, tokens_consumed, usage_count, last_decision_reason)
         VALUES (1, 'CustomerSupportBot', 'Automated frontline user support specialist', 'high', 'active', 0.95, 124500, 412, NULL)
@@ -52,24 +55,30 @@ def seed_database(cursor):
         INSERT INTO policies (policy_id, agent_id, max_cost_limit, reliability_threshold)
         VALUES (5, 5, 0.00, 0.99)
     """)
-    
+
 
 def setup_initial_hash(cursor):
     # initial hash string for both log tables
 
     gov_data = "1initial_boot_allowedsystemInitialization0"
     gov_hash = hashlib.sha256(gov_data.encode()).hexdigest()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO governance_logs (log_id, agent_id, action_taken, approved_by, reason, previous_hash, hash)
         VALUES (1, 1, 'initial_boot_allowed', 'system', 'Initialization', '0', ?)
-    """, (gov_hash,))
+    """,
+        (gov_hash,),
+    )
     use_data = "011000"
     use_hash = hashlib.sha256(use_data.encode()).hexdigest()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO usage_ledger (ledger_id, request_id, caller_agent, target_agent, caller_tokens_consumed, target_tokens_consumed, previous_hash, hash)
         VALUES (1, '0', 1, 1, 0, 0, '0', ?)
-    """, (use_hash,))
-    
+    """,
+        (use_hash,),
+    )
+
 
 def setup_insert_update_security(cursor):
     """
@@ -92,6 +101,8 @@ def setup_insert_update_security(cursor):
                 SELECT RAISE(FAIL, 'Logs are append-only and cannot be deleted.');
             END;
         """)
+
+
 if __name__ == "__main__":
     create_schema()
     conn = get_db_connection()
@@ -102,8 +113,12 @@ if __name__ == "__main__":
     # cursor.execute("DELETE FROM governance_logs")
     # cursor.execute("DELETE FROM policies")
     # cursor.execute("DELETE FROM agents")
-    seed_database(cursor)   # only need to seed the database when this script is executed as the main script
-    setup_initial_hash(cursor) # to set up the initial hash values for both log tables
-    setup_insert_update_security(cursor) # to set up triggers to prevent updates and deletes on log tables
+    seed_database(
+        cursor
+    )  # only need to seed the database when this script is executed as the main script
+    setup_initial_hash(cursor)  # to set up the initial hash values for both log tables
+    setup_insert_update_security(
+        cursor
+    )  # to set up triggers to prevent updates and deletes on log tables
     conn.commit()
     conn.close()

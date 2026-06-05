@@ -1,11 +1,13 @@
 """
-View the Audit logs from all the three tables in a single endpoint 
+View the Audit logs from all the three tables in a single endpoint
 """
 
 from fastapi import APIRouter, Depends
+
 from agent_governance_console.database.db_connection import get_db_connection
 
 router = APIRouter()
+
 
 def get_db():
     db = get_db_connection()
@@ -13,6 +15,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 @router.get("/", status_code=200)
 def get_audit_trail(db=Depends(get_db)):
@@ -26,5 +29,5 @@ def get_audit_trail(db=Depends(get_db)):
     return {
         "governance_logs": governance,
         "usage_ledger": usage,
-        "security_incident_logs": security
+        "security_incident_logs": security,
     }
