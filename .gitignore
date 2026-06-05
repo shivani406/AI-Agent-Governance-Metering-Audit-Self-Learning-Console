@@ -7,6 +7,8 @@ ENV/
 # Python Cache and Compiled Files
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 
 # Poetry
 .poetry/
